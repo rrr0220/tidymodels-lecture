@@ -7,7 +7,10 @@ known
 # ０．初期分割 ------------------------------------------------------------------
 initial_split = 
 initial_split(known, prop = 0.8, strata = "Status") %>% 
-  with_seed(1234, .)
+  with_seed(1234, .)  # 第一引数にないとき.を使う
+
+known %>% 
+  select(Status)
 
 train = training(initial_split)
 test = testing(initial_split)
@@ -29,6 +32,7 @@ kfold_splits %>%
   assessment()
 
 # 各行のsplitに対するanalysisとassessment
+kfold_splits =
 kfold_splits %>% 
   rowwise() %>% 
   mutate(
@@ -42,16 +46,41 @@ hold_out_split =
 validation_split(train, prop = 0.7) %>% 
   with_seed(1234, .)
 
+# K分割のK=1の場合
+
 
 # ３．leave-one-out分割 -------------------------------------------------------
 leave_one_out_splits =
   loo_cv(train) 
 
+# データが少ない時に使う
 
 # ４．stratified分割 ----------------------------------------------------------
-stratified_splits =
+stratified_split =
 vfold_cv(train, v = 4, strata = "Status") %>% 
   with_seed(1234, .)
+
+train %>% 
+  count(Status) %>% 
+  mutate(prop=n/sum(n))
+
+stratified_split %>% 
+  rowwise() %>% 
+  mutate(.analysis = list(splits %>% analysis()),
+         .assessment = list(splits %>% assessment()),
+         .analysis_prop_good = 
+           .analysis %>%
+           count(Status) %>% 
+           mutate(prop=n/sum(n)) %>% 
+           filter(Status == "good") %>% 
+           pull(prop),
+         .assessment_prop_good = 
+           .assessment %>%
+           count(Status) %>% 
+           mutate(prop=n/sum(n)) %>% 
+           filter(Status == "good") %>% 
+           pull(prop)
+         ) 
 
 # １．K分割
 kfold_splits =
